@@ -2,13 +2,24 @@ name := """play-slick-flyway-macwire"""
 
 version := "1.0-SNAPSHOT"
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+lazy val flyway = (project in file("modules/flyway"))
+  .enablePlugins(FlywayPlugin)
+
+lazy val root = (project in file("."))
+  .enablePlugins(PlayScala)
 
 scalaVersion := "2.12.4"
 
+fork in Test := true
+
+resolvers ++= Seq(Resolver.sonatypeRepo("releases"), Resolver.sonatypeRepo("snapshots"))
+
 libraryDependencies ++= Seq(
   "com.softwaremill.macwire" %% "macros"             % "2.3.0" % Provided,
-  "org.scalatestplus.play"   %% "scalatestplus-play" % "3.1.2" % Test
+  "org.scalatestplus.play"   %% "scalatestplus-play" % "3.1.2" % Test,
+  "org.flywaydb"             % "flyway-core"         % "4.2.0" % Test,
+  "org.postgresql"           % "postgresql"          % "42.1.4",
+  "org.flywaydb"             % "flyway-core"         % "4.2.0"
 )
 
 scalacOptions ++= Seq(
@@ -77,3 +88,14 @@ wartremoverErrors in (Compile, compile) ++= Warts.unsafe
 wartremoverExcluded ++= routes.in(Compile).value
 
 scalafmtOnCompile := true
+scalafmtTestOnCompile := true
+
+lazy val databaseUrl      = sys.env.getOrElse("DB_DEFAULT_URL", "jdbc:h2:./test")
+lazy val databaseUser     = sys.env.getOrElse("DB_DEFAULT_USER", "sa")
+lazy val databasePassword = sys.env.getOrElse("DB_DEFAULT_PASSWORD", "")
+
+flywayLocations := Seq("classpath:db/migration")
+
+flywayUrl := databaseUrl
+flywayUser := databaseUser
+flywayPassword := databasePassword
